@@ -1,0 +1,6 @@
+python: can't open file 'wechat_group_msg.py': [Errno 2] No such file or directory
+Traceback (most recent call last):
+  File "wechat_group_msg.py", line 22, in <module>
+    from apscheduler.schedulers.blocking import BlockingScheduler
+ModuleNotFoundError: No module named 'apscheduler'
+启动任务

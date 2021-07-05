@@ -1,0 +1,1 @@
+nohup python -u wechat_group_msg.py >> wechat_group_msg.log 2>&1 &
