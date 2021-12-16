@@ -12,6 +12,7 @@ from mitmproxy.http import HTTPFlow
 from mitmdump import DumpMaster, Options
 from mitmproxy.tools import main, web
 
+from house import Login
 from proxy_util.UIQtThread import UIActionQtThread
 
 """
@@ -19,10 +20,7 @@ Basic skeleton of a mitmproxy addon.
 Run as follows: mitmproxy -s anatomy.py
 Run as follows: mitmdump -s anatomy.py
 """
-keywords = ['smartgate.ywtbsupappw.sh.gov.cn']
-
-
-# keywords = ['homestay']
+keywords = ['183']
 
 
 def filterUrl(host):
@@ -37,7 +35,7 @@ def log(msg):
     print(msg)
 
 
-class Counter:
+class USBCounter:
     def __init__(self, thread: UIActionQtThread):
         self.num = 0
         self.did = None
@@ -62,30 +60,24 @@ class Counter:
         host = flow.request.host
         if filterUrl(host):
             data['url'] = flow.request.url
-            data['x-tif-did'] = flow.request.headers.get('x-tif-did')
-            data['x-tif-sid'] = flow.request.headers.get('x-tif-sid')
+            data['cookie'] = None
+            data['cookie'] = flow.request.headers.get('Cookie')
+            data['referer'] = flow.request.headers.get('Referer')
+            data['location'] = flow.response.headers.get('Location')
             data['host'] = host
             data['method'] = flow.request.method
-            self.sessionId = None
             try:
                 data['param'] = json.loads(flow.request.text)
-                self.sessionId = data['param'].get('sessionId')
             except:
                 data['param'] = flow.request.text
-            try:
-                data['response'] = json.loads(flow.response.text)
-            except:
-                data['response'] = flow.response.text
-            if self.sessionId is None:
-                try:
-                    self.sessionId = data['response'].get('data').get('sessionId')
-                except:
-                    pass
             dumps = json.dumps(data, indent=4, ensure_ascii=False)
+            if (data['location']):
+                print(f"==找到location==={data['location']}=====")
             log("response  is  \n %s" % dumps)
-            self.did = data['x-tif-did']
-            self.sid = data['x-tif-sid']
-            if self.did and self.sid and self.sessionId:
+            self.did = data['url']
+            self.sid = data['referer']
+            self.sessionId = data['cookie']
+            if self.did or self.sid or self.sessionId:
                 if self._thread:
                     self._thread.response(1, "获取到数据", [self.did, self.sid, self.sessionId])
             #     proxy_result_dialog.uppdate(self.did, self.sid, self.sessionId)
@@ -117,7 +109,7 @@ class ServerManager:
         opts = Options(listen_host=host, listen_port=port, scripts=None)
         self.master = DumpMaster(opts)
         self._thread = thread
-        counter = Counter(thread)
+        counter = USBCounter(thread)
         addons = [
             counter
         ]
@@ -125,7 +117,8 @@ class ServerManager:
         self.master.run()
 
     def start_mitweb(self, host=None, port: int = None, thread: UIActionQtThread = None):
-        thread.response(0, "web查看接口信息服务启动")
+        if thread:
+            thread.response(0, "web查看接口信息服务启动")
         args = [
             "--web-open-browser",
             "--listen-host",
@@ -136,7 +129,6 @@ class ServerManager:
         # web.master.WebMaster(Options(listen_host=host, listen_port=port)).shutdown()
         main.mitmweb(args)
 
-
     def shutdown(self):
         self._thread.response(0, "shutdown", None)
         self.master.shutdown()
@@ -146,5 +138,5 @@ if __name__ == '__main__':
     # opts = Options(listen_host='0.0.0.0', listen_port=8888, scripts=__file__)
     # m = DumpMaster(opts)
     # m.run()
-    ServerManager().start_mitweb('192.168.5.234', 8889)
+    ServerManager().start('192.168.5.234', 8889)
     # ServerManager().start('192.168.5.234', 8889)

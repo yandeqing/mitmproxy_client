@@ -49,7 +49,7 @@ def switch(proxy_host="192.168.5.234:8889"):
 
 def start_proxy(proxy_host):
     print(f"打开代理{proxy_host}")
-    SetProxy(1, proxy_host, "preview.apiservices.zuber.im")
+    SetProxy(1, proxy_host, "preview.apiservices.zuber.im;")
 
 
 def stop_proxy():

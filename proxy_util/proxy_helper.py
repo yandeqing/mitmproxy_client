@@ -6,11 +6,13 @@ import threading
 import requests
 from PyQt5.QtWidgets import QDialog, QFormLayout, QLabel, QLineEdit, QPushButton, QDialogButtonBox, \
     QApplication
+from qtpy import QtWidgets
 
-from proxy_util import anatomy_account, proxy_controller, shell_util, \
+from house import Login
+from proxy_util import anatomy_usblogin, proxy_controller, shell_util, \
     confirm_dialog
 from proxy_util.UIQtThread import UIActionQtThread
-from proxy_util.anatomy_account import ServerManager
+from proxy_util.anatomy_usblogin import ServerManager
 from proxy_util.proxy_uploader import ProxyResultDialog
 from utils import time_util
 
@@ -43,13 +45,28 @@ class ProxySettingDialog(QDialog):
             '"C:\Program Files (x86)\Tencent\WeChat\WechatAppLauncher.exe" -launch_appid=wxc5059c3803665d9c')
         layout.addRow(self.label, self.le3)
 
+        self.label = QLabel("浏览器快捷方式")
+        self.le4 = QLineEdit()
+        self.le4.setText(
+            "C:/Users/Zuber/AppData/Roaming/360se6/Application/360se.exe")
+        layout.addRow(self.label, self.le4)
+
+        self.label = QLabel("启动链接")
+        self.le5 = QLineEdit()
+        self.le5.setText(
+            'http://183.194.243.146:7001/fangdi/system/USBLoginCheck.jsp?pwd=134cc70a')
+        layout.addRow(self.label, self.le5)
+
         self.setProxyButton = QPushButton("设置代理")
-        self.certButton = QPushButton("配置证书")
+        self.certButton = QPushButton("配置证书（已匹配请忽略）")
+        self.saveButton = QPushButton("启动代理服务器")
         self.cacelProxyButton = QPushButton("取消代理")
-        self.saveButton = QPushButton("启动端口监听")
+        self.startWeb = QPushButton("启动浏览器")
+        self.enterWeb = QPushButton("直接进入系统")
+        self.stopWeb = QPushButton("关闭浏览器")
         self.miniBtn = QPushButton("启动小程序")
         self.miniStopBtn = QPushButton("关闭小程序")
-        self.webBtn = QPushButton("浏览器查看接口数据")
+        self.webBtn = QPushButton("可视化调试模式")
         self.autoBtn = QPushButton("启动自动化")
         self.autoStopBtn = QPushButton("关闭自动化")
         self.certButton.clicked.connect(
@@ -57,6 +74,9 @@ class ProxySettingDialog(QDialog):
         self.webBtn.clicked.connect(self.thread_startweb)
         self.miniBtn.clicked.connect(self.startMini)
         self.miniStopBtn.clicked.connect(self.stopMini)
+        self.startWeb.clicked.connect(self.threadStartApp)
+        self.enterWeb.clicked.connect(self.threadEnterApp)
+        self.stopWeb.clicked.connect(self.stopApp)
         self.autoBtn.clicked.connect(self.threadAutoStart)
         self.autoStopBtn.clicked.connect(self.autoStop)
         self.saveButton.clicked.connect(self.thread_save)
@@ -64,24 +84,47 @@ class ProxySettingDialog(QDialog):
         self.cacelProxyButton.clicked.connect(self.cancel_proxy)
 
         self.buttonBox = QDialogButtonBox()
-
-        self.buttonBox.addButton(self.setProxyButton, QDialogButtonBox.ButtonRole.AcceptRole)
-        self.buttonBox.addButton(self.cacelProxyButton, QDialogButtonBox.ButtonRole.AcceptRole)
-        self.buttonBox.addButton(self.saveButton, QDialogButtonBox.ButtonRole.AcceptRole)
-        self.buttonBox.addButton(self.webBtn, QDialogButtonBox.ButtonRole.AcceptRole)
+        self.label = QLabel("代理配置")
         self.buttonBox.addButton(self.certButton, QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttonBox.addButton(self.cacelProxyButton, QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttonBox.addButton(self.webBtn, QDialogButtonBox.ButtonRole.RejectRole)
+        layout.addRow(self.label, self.buttonBox)
 
+        self.buttonBox = QDialogButtonBox()
+        self.label = QLabel("启动流程")
+        self.buttonBox.addButton(self.setProxyButton, QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttonBox.addButton(self.saveButton, QDialogButtonBox.ButtonRole.AcceptRole)
+        layout.addRow(self.label, self.buttonBox)
 
+        self.label = QLabel("半自动化")
+        self.buttonBox = QDialogButtonBox()
+        self.buttonBox.addButton(self.startWeb, QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttonBox.addButton(self.enterWeb, QDialogButtonBox.ButtonRole.AcceptRole)
         self.buttonBox.addButton(self.miniBtn, QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttonBox.addButton(self.stopWeb, QDialogButtonBox.ButtonRole.RejectRole)
         self.buttonBox.addButton(self.miniStopBtn, QDialogButtonBox.ButtonRole.RejectRole)
+        layout.addRow(self.label, self.buttonBox)
 
-        layout.addRow(self.buttonBox)
+        self.label = QLabel("全自动化")
         self.buttonBox2 = QDialogButtonBox()
         self.buttonBox2.addButton(self.autoBtn, QDialogButtonBox.ButtonRole.AcceptRole)
         self.buttonBox2.addButton(self.autoStopBtn, QDialogButtonBox.ButtonRole.RejectRole)
         layout.addRow(self.buttonBox2)
+        self.buttonBox2 = QDialogButtonBox()
+        self.buttonBox2.addButton(self.autoBtn, QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttonBox2.addButton(self.autoStopBtn, QDialogButtonBox.ButtonRole.RejectRole)
+        layout.addRow(self.label, self.buttonBox2)
+
         self.setLayout(layout)
         self.setWindowTitle("代理设置小工具")
+
+    def closeEvent(self, event):
+        result = QtWidgets.QMessageBox.question(self, "提示", "确定要退出吗?\n退出建议取消代理设置，否则将无法上网",
+                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if result == QtWidgets.QMessageBox.Yes:
+            event.accept()
+        else:
+            event.ignore()
 
     def thread_save(self):
         loop = asyncio.get_event_loop()
@@ -108,6 +151,34 @@ class ProxySettingDialog(QDialog):
     def startMini(self):
         shell_cmd = self.le3.text()
         shell_util.exe_shell(shell_cmd)
+
+    def stopMini(self):
+        shell_util.exe_shell("taskkill /F /IM WeChatApp.exe")
+
+    def threadStartApp(self):
+        t = threading.Thread(target=self.startApp)
+        # 守护 !!!
+        t.setDaemon(True)
+        # 启动
+        t.start()
+
+    def startApp(self):
+        shell_cmd = self.le4.text() + " " + self.le5.text()
+        shell_util.exe_shell(shell_cmd)
+
+    def threadEnterApp(self):
+        t = threading.Thread(target=self.enterApp)
+        # 守护 !!!
+        t.setDaemon(True)
+        # 启动
+        t.start()
+
+    def enterApp(self):
+        path = self.le4.text()
+        Login.open_with360(path=path)
+
+    def stopApp(self):
+        shell_util.exe_shell("taskkill /F /IM 360se.exe")
 
     def threadAutoStart(self):
         self.set_proxy()
@@ -137,21 +208,15 @@ class ProxySettingDialog(QDialog):
             upload = self.need_upload()
             if upload:
                 timeStr = time_util.now_to_date()
-                print(f"【{timeStr}关闭小程序】")
-                self.stopMini()
-                self.event.wait(3)
-                print(f"【{timeStr}启动小程序】")
-                self.startMini()
+                print(f"【{timeStr}启动程序】")
+                self.startApp()
 
     def autoStop(self):
         self.autoUpload = False
-        self.stopMini()
+        self.stopApp()
         if self.manager:
             self.manager.shutdown()
             self.thread.stop_thread()
-
-    def stopMini(self):
-        shell_util.exe_shell("taskkill /F /IM WeChatApp.exe")
 
     def save(self, loop):
         host = self.le1.text()
@@ -189,9 +254,16 @@ class ProxySettingDialog(QDialog):
         if 1 == res['code']:
             args = res['result']
             if self.autoUpload:
-                print(f"【msg_callback().msg_callback=自动上传{args}")
-                self.insert_item({"account": args[0], "password": args[1], "sessionId": args[2]})
-                self.stopMini()
+                url = args[0]
+                if "MiddAppList" in url:
+                    self.enterApp()
+                cookie = args[2]
+                if cookie and cookie.startswith("JSESSIONID="):
+                    print(f"【msg_callback().msg_callback=自动上传{args}")
+                    res = self.insert_item(
+                        {"url": url, "referer": args[1], "cookie": args[2]})
+                    if res:
+                        self.stopApp()
             else:
                 self.showDialog(args[0], args[1], args[2])
 
@@ -200,7 +272,7 @@ class ProxySettingDialog(QDialog):
             confirm_dialog.showMsg(self, hint)
 
     def insert_item(self, item):
-        url = "http://preview.apiservices.zuber.im/agent/road/ssbsetting"
+        url = "http://preview.apiservices.zuber.im/agent/road/fgjsetting"
         # url = None
         try:
             res = requests.post(url, json=item)
@@ -213,7 +285,8 @@ class ProxySettingDialog(QDialog):
             return None
 
     def need_upload(self):
-        url = "http://preview.apiservices.zuber.im/agent/road/ssbsetting"
+        # if  True: return True
+        url = "http://preview.apiservices.zuber.im/agent/road/fgjsetting"
         try:
             print(f"【检测是否需要更新.url={url}】")
             res = requests.get(url)
