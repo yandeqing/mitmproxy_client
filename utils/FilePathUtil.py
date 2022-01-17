@@ -7,7 +7,6 @@
 import os
 import shutil
 
-
 currentFile = os.getcwd()
 proDir = currentFile[:currentFile.find("mitmproxy_client") + len("mitmproxy_client")]
 
@@ -18,6 +17,18 @@ def getProjectRootDir():
 
 def get_full_dir(path, *paths):
     return os.path.join(proDir, path, *paths)
+
+
+def get_or_create_full_dir(path, *paths):
+    join = os.path.join(proDir, path, *paths)
+    if not os.path.exists(os.path.join(proDir, path)):
+        os.mkdir(os.path.join(proDir, path))
+        print(f"【文件夹不已存在,已创建{os.path.join(proDir, path)}】")
+    if not os.path.exists(join):
+        print(f"【文件不已存在,已创建{join}】")
+        with open(join, "w+",encoding="utf-8") as file:
+            file.write("#这是配置存储的文件")
+    return join
 
 
 def move_files_by_time(source, destination, start, end):
@@ -70,6 +81,7 @@ def get_lastmodify_file(test_report, reverse=False):
     else:
         return test_report
 
+
 # 打开文件夹
 def startfile(filename):
     try:
@@ -78,11 +90,9 @@ def startfile(filename):
         os.subprocess.Popen(['xdg-open', filename])
 
 
-
-
 if __name__ == '__main__':
     full_dir = get_full_dir('wxfriend', 'pic', 'WeiXin')
-    des_dir = get_full_dir('wxfriend', 'pic', 'WeiXinCopy','content_md5')
+    des_dir = get_full_dir('wxfriend', 'pic', 'WeiXinCopy', 'content_md5')
     move_files_by_time(full_dir, des_dir, int('1607509768864'), int('1607509790533'))
     full_dir = get_full_dir('wxfriend', 'pic', 'WeiXinCopy', '1be904df39b2fc933fd71c24a06caac9')
     get_files_by_dir(full_dir)

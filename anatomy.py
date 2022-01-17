@@ -16,7 +16,8 @@ Basic skeleton of a mitmproxy addon.
 Run as follows: mitmproxy -s anatomy.py
 Run as follows: mitmdump -s anatomy.py
 """
-keywords = ['smartgate.ywtbsupappw.sh.gov.cn']
+keywords = ['183.194.244.244']
+# keywords = ['smartgate.ywtbsupappw.sh.gov.cn']
 
 
 # keywords = ['homestay']
@@ -68,6 +69,7 @@ class Counter:
                 data['param'] = flow.request.text
             try:
                 data['response'] = json.loads(flow.response.text)
+                data['cookie'] =  flow.response.headers.get('Set-Cookie')
             except:
                 data['response'] = flow.response.text
             dumps = json.dumps(data, indent=4, ensure_ascii=False)

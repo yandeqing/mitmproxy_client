@@ -16,19 +16,19 @@ class ProxyResultDialog(QDialog):
 
         self.label = QLabel("上传接口:")
         self.le1 = QLineEdit()
-        self.le1.setText("http://preview.apiservices.zuber.im/agent/road/ssbsetting")
-        self.le1.setPlaceholderText("http://preview.apiservices.zuber.im/agent/road/ssbsetting")
+        self.le1.setText("http://preview.apiservices.zuber.im/agent/road/fgjsetting")
+        self.le1.setPlaceholderText("http://preview.apiservices.zuber.im/agent/road/fgjsetting")
         layout.addRow(self.label, self.le1)
 
         self.label = QLabel("\n抓取结果:")
         layout.addRow(self.label)
-        self.label3 = QLineEdit("account")
+        self.label3 = QLineEdit("url")
         self.le3 = QLineEdit()
         layout.addRow(self.label3, self.le3)
-        self.label4 = QLineEdit("password")
+        self.label4 = QLineEdit("referer")
         self.le4 = QLineEdit()
         layout.addRow(self.label4, self.le4)
-        self.label5 = QLineEdit("sessionId")
+        self.label5 = QLineEdit("cookie")
         self.le5 = QLineEdit()
         layout.addRow(self.label5, self.le5)
 
@@ -63,6 +63,9 @@ class ProxyResultDialog(QDialog):
         if not url:
             return
         try:
+            item["type"] = "fgj"
+            item["source"] = "wuju"
+            item["key"] = "8D0903C6E3FFF3B17B3A4BF16F3041E9"
             res = requests.post(url, json=item)
             res_json = res.json()
             jsonstr = json.dumps(res_json, indent=4, ensure_ascii=False)
