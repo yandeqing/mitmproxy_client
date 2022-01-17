@@ -15,6 +15,7 @@ from proxy_util.UIQtThread import UIActionQtThread
 from proxy_util.anatomy_usblogin import ServerManager
 from proxy_util.proxy_uploader import ProxyResultDialog
 from utils import time_util
+from utils.AppConfig import ShareConfig
 
 
 class ProxySettingDialog(QDialog):
@@ -23,6 +24,7 @@ class ProxySettingDialog(QDialog):
         self.autoUpload = False
         self.win = None
         self.manager = None
+        self.shareConfig = ShareConfig()
         self.event = threading.Event()
         self.thread = UIActionQtThread(self.msg_callback)
         layout = QFormLayout()
@@ -30,7 +32,7 @@ class ProxySettingDialog(QDialog):
         layout.addRow(self.label)
         self.label = QLabel("host")
         self.le1 = QLineEdit()
-        ip = get_host_ip()
+        ip = self.get_host_ip()
         self.le1.setText(ip)
         layout.addRow(self.label, self.le1)
 
@@ -43,30 +45,38 @@ class ProxySettingDialog(QDialog):
         self.le3 = QLineEdit()
         self.le3.setText(
             '"C:\Program Files (x86)\Tencent\WeChat\WechatAppLauncher.exe" -launch_appid=wxc5059c3803665d9c')
-        layout.addRow(self.label, self.le3)
+        # layout.addRow(self.label, self.le3)
 
         self.label = QLabel("浏览器快捷方式")
         self.le4 = QLineEdit()
-        self.le4.setText(
-            "C:/Users/Zuber/AppData/Roaming/360se6/Application/360se.exe")
+        browerpath = self.shareConfig.get_setting("webbrower")
+        if browerpath is None:
+            self.le4.setText(
+                "C:/Users/Zuber/AppData/Roaming/360se6/Application/360se.exe")
+        else:
+            self.le4.setText(browerpath)
         layout.addRow(self.label, self.le4)
 
         self.label = QLabel("启动链接")
         self.le5 = QLineEdit()
-        self.le5.setText(
-            'http://183.194.243.146:7001/fangdi/system/USBLoginCheck.jsp?pwd=134cc70a')
+        homepage = self.shareConfig.get_setting("homepage")
+        if homepage is None:
+            self.le5.setText(
+                'http://newsh.fangdi.com.cn:6001/shhouse/system/USBLogin.jsp')
+        else:
+            self.le5.setText(homepage)
         layout.addRow(self.label, self.le5)
 
         self.setProxyButton = QPushButton("设置代理")
         self.certButton = QPushButton("配置证书（已匹配请忽略）")
         self.saveButton = QPushButton("启动代理服务器")
         self.cacelProxyButton = QPushButton("取消代理")
-        self.startWeb = QPushButton("启动浏览器")
-        self.enterWeb = QPushButton("直接进入系统")
+        self.startWeb = QPushButton("登录")
+        self.enterWeb = QPushButton("选择并进入系统")
         self.stopWeb = QPushButton("关闭浏览器")
         self.miniBtn = QPushButton("启动小程序")
         self.miniStopBtn = QPushButton("关闭小程序")
-        self.webBtn = QPushButton("可视化调试模式")
+        self.webBtn = QPushButton("接口跟踪调试")
         self.autoBtn = QPushButton("启动自动化")
         self.autoStopBtn = QPushButton("关闭自动化")
         self.certButton.clicked.connect(
@@ -96,13 +106,13 @@ class ProxySettingDialog(QDialog):
         self.buttonBox.addButton(self.saveButton, QDialogButtonBox.ButtonRole.AcceptRole)
         layout.addRow(self.label, self.buttonBox)
 
-        self.label = QLabel("半自动化")
+        self.label = QLabel("手动")
         self.buttonBox = QDialogButtonBox()
         self.buttonBox.addButton(self.startWeb, QDialogButtonBox.ButtonRole.AcceptRole)
         self.buttonBox.addButton(self.enterWeb, QDialogButtonBox.ButtonRole.AcceptRole)
-        self.buttonBox.addButton(self.miniBtn, QDialogButtonBox.ButtonRole.AcceptRole)
+        # self.buttonBox.addButton(self.miniBtn, QDialogButtonBox.ButtonRole.AcceptRole)
         self.buttonBox.addButton(self.stopWeb, QDialogButtonBox.ButtonRole.RejectRole)
-        self.buttonBox.addButton(self.miniStopBtn, QDialogButtonBox.ButtonRole.RejectRole)
+        # self.buttonBox.addButton(self.miniStopBtn, QDialogButtonBox.ButtonRole.RejectRole)
         layout.addRow(self.label, self.buttonBox)
 
         self.label = QLabel("全自动化")
@@ -118,25 +128,34 @@ class ProxySettingDialog(QDialog):
         self.setLayout(layout)
         self.setWindowTitle("代理设置小工具")
 
+
     def closeEvent(self, event):
         result = QtWidgets.QMessageBox.question(self, "提示", "确定要退出吗?\n退出建议取消代理设置，否则将无法上网",
                                                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         if result == QtWidgets.QMessageBox.Yes:
             event.accept()
+            self.shareConfig.set_setting("webbrower", self.le4.text())
+            self.shareConfig.set_setting("homepage", self.le5.text())
         else:
             event.ignore()
+            self.shareConfig.set_setting("webbrower", self.le4.text())
+            self.shareConfig.set_setting("homepage", self.le5.text())
+
 
     def thread_save(self):
         loop = asyncio.get_event_loop()
         self.thread_it(self.save, loop)
 
+
     def thread_startweb(self):
         loop = asyncio.get_event_loop()
         self.thread_it(self.start_web, loop)
 
+
     def clickCertButton(self):
         import webbrowser
         webbrowser.open("http://mitm.it/cert/p12")
+
 
     def set_proxy(self):
         host = self.le1.text()
@@ -144,16 +163,20 @@ class ProxySettingDialog(QDialog):
         proxy_controller.start_proxy(host + ":" + port)
         self.thread.response(0, '代理设置成功')
 
+
     def cancel_proxy(self):
         proxy_controller.stop_proxy()
         self.thread.response(0, '取消成功')
+
 
     def startMini(self):
         shell_cmd = self.le3.text()
         shell_util.exe_shell(shell_cmd)
 
+
     def stopMini(self):
         shell_util.exe_shell("taskkill /F /IM WeChatApp.exe")
+
 
     def threadStartApp(self):
         t = threading.Thread(target=self.startApp)
@@ -162,9 +185,12 @@ class ProxySettingDialog(QDialog):
         # 启动
         t.start()
 
+
     def startApp(self):
-        shell_cmd = self.le4.text() + " " + self.le5.text()
-        shell_util.exe_shell(shell_cmd)
+        Login.open(path=self.le4.text(),url=self.le5.text())
+        self.shareConfig.set_setting("webbrower",self.le4.text())
+        self.shareConfig.set_setting("homepage",self.le5.text())
+
 
     def threadEnterApp(self):
         t = threading.Thread(target=self.enterApp)
@@ -173,12 +199,17 @@ class ProxySettingDialog(QDialog):
         # 启动
         t.start()
 
+
     def enterApp(self):
         path = self.le4.text()
-        Login.open_with360(path=path)
+        Login.open_appnavigatorin(path=path)
+        self.shareConfig.set_setting("webbrower", self.le4.text())
+        self.shareConfig.set_setting("homepage", self.le5.text())
+
 
     def stopApp(self):
         shell_util.exe_shell("taskkill /F /IM 360se.exe")
+
 
     def threadAutoStart(self):
         self.set_proxy()
@@ -189,6 +220,7 @@ class ProxySettingDialog(QDialog):
         t.setDaemon(True)
         # 启动
         t.start()
+
 
     def autoStart(self):
         self.autoUpload = True
@@ -211,12 +243,14 @@ class ProxySettingDialog(QDialog):
                 print(f"【{timeStr}启动程序】")
                 self.startApp()
 
+
     def autoStop(self):
         self.autoUpload = False
         self.stopApp()
         if self.manager:
             self.manager.shutdown()
             self.thread.stop_thread()
+
 
     def save(self, loop):
         host = self.le1.text()
@@ -227,6 +261,7 @@ class ProxySettingDialog(QDialog):
         self.manager = ServerManager()
         self.manager.start(host, port, self.thread)
 
+
     def start_web(self, loop):
         host = self.le1.text()
         port = int(self.le2.text())
@@ -234,6 +269,7 @@ class ProxySettingDialog(QDialog):
             asyncio.set_event_loop(loop)
         self.manager = ServerManager()
         self.manager.start_mitweb(host, port, self.thread)
+
 
     def showDialog(self, did, sid, sessionId):
         if self.win is None or not self.win.isVisible():
@@ -248,9 +284,10 @@ class ProxySettingDialog(QDialog):
         else:
             self.win.updateResult(did, sid, sessionId)
 
+
     def msg_callback(self, *msg):
         res = msg[0]
-        print(f"【msg_callback().res={res}】")
+        # print(f"【msg_callback().res={res}】")
         if 1 == res['code']:
             args = res['result']
             if self.autoUpload:
@@ -271,10 +308,18 @@ class ProxySettingDialog(QDialog):
             hint = res.get('msg')
             confirm_dialog.showMsg(self, hint)
 
+
     def insert_item(self, item):
         url = "http://preview.apiservices.zuber.im/agent/road/fgjsetting"
         # url = None
         try:
+            item["key"] = "8D0903C6E3FFF3B17B3A4BF16F3041E9"
+            # type : sign/fgj
+            # source: wuju/tu
+            item["type"] = "fgj"
+            item["source"] = "wuju"
+            item["key"] = "8D0903C6E3FFF3B17B3A4BF16F3041E9"
+
             res = requests.post(url, json=item)
             res_json = res.json()
             jsonstr = json.dumps(res_json, indent=4, ensure_ascii=False)
@@ -284,12 +329,14 @@ class ProxySettingDialog(QDialog):
             print(e)
             return None
 
+
     def need_upload(self):
         # if  True: return True
         url = "http://preview.apiservices.zuber.im/agent/road/fgjsetting"
         try:
             print(f"【检测是否需要更新.url={url}】")
-            res = requests.get(url)
+            item = {"key": "8D0903C6E3FFF3B17B3A4BF16F3041E9"}
+            res = requests.get(url, params=item)
             res_json = res.json()
             print(f"【检测是否需要更新.response={res_json}】")
             return res_json.get('result')
@@ -297,24 +344,25 @@ class ProxySettingDialog(QDialog):
             print(e)
             return False
 
+
     def thread_it(self, func, args):
         self.thread.bind(func, args)
         self.thread.start()
 
 
-def get_host_ip():
-    """
-    查询本机ip地址
-    :return:
-    """
-    try:
-        import socket
-        session = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        session.connect(('8.8.8.8', 80))
-        ip = session.getsockname()[0]
-    finally:
-        session.close()
-    return ip
+    def get_host_ip(self):
+        """
+        查询本机ip地址
+        :return:
+        """
+        try:
+            import socket
+            session = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            session.connect(('8.8.8.8', 80))
+            ip = session.getsockname()[0]
+        finally:
+            session.close()
+        return ip
 
 
 if __name__ == '__main__':

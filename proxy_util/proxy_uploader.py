@@ -63,6 +63,9 @@ class ProxyResultDialog(QDialog):
         if not url:
             return
         try:
+            item["type"] = "fgj"
+            item["source"] = "wuju"
+            item["key"] = "8D0903C6E3FFF3B17B3A4BF16F3041E9"
             res = requests.post(url, json=item)
             res_json = res.json()
             jsonstr = json.dumps(res_json, indent=4, ensure_ascii=False)
