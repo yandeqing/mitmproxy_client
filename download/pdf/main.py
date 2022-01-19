@@ -6,9 +6,10 @@
 '''
 import requests
 
-from utils import re_util, csv_util, FilePathUtil
+from utils import re_util, csv_util, FilePathUtil, time_util
 
-if __name__ == '__main__':
+
+def get_examination_materials():
     i = 1
     arr_all = []
     while True:
@@ -23,9 +24,29 @@ if __name__ == '__main__':
             else:
                 arr_all.extend(arr)
             i = i + 1
-
-    f = open(f'{FilePathUtil.get_full_dir("download", "pdf", "考试资料.txt")}',"a+",encoding="utf-8")
+    f = open(f'{FilePathUtil.get_full_dir("download", "pdf", "考试资料.txt")}', "a+", encoding="utf-8")
     for item in arr_all:
         print(item)
-        f.write(item+"\n")
+        f.write(item + "\n")
     f.close()
+
+
+def get_recent_practise_materials(url):
+    arr_all = []
+    response = requests.get(url)
+    if response and response.text:
+        print(response.text)
+        arr = re_util.find_texts_by_reg(r'data-url="(.+?\.pdf)', response.text)
+        if arr:
+            arr_all.extend(arr)
+    date = time_util.now_to_date("%Y-%m-%d")
+    f = open(f'{FilePathUtil.get_full_dir("download", "pdf", f"{date}资料.txt")}', "a+", encoding="utf-8")
+    for item in arr_all:
+        print(item)
+        f.write(item + "\n")
+    f.close()
+
+
+if __name__ == '__main__':
+    url = f"http://m.hqwx.com/news/2022-1/16417784982588.html"
+    get_recent_practise_materials(url)
