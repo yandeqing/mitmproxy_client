@@ -20,7 +20,7 @@ Basic skeleton of a mitmproxy addon.
 Run as follows: mitmproxy -s anatomy.py
 Run as follows: mitmdump -s anatomy.py
 """
-keywords = ['data.10jqka.com.cn']
+keywords = ['appapi.5i5j.com']
 # keywords = ['USBLogin','AppNavigatorIn51','main','List','apply','checkToken']
 
 

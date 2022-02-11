@@ -32,10 +32,13 @@ def find_texts_by_reg(reg, text):
 
 
 if __name__ == '__main__':
-    re.compile(r'asd$')
-
-    # search = search_text_by_reg(r'(\d{7,11})', "你好12345678911厕所")
-    cookies = "AlteonP=APcZL2TcHKz3B3twFFdCVw$$; Path=/, JSESSIONID=8KS2h9ML0HYTw2lTNQXyynkDDLpf5VnTpjgfLxgvxLhrBCJGHrsf!-530257836; path=/; HttpOnly"
-    # search = find_texts_by_reg(r'(AlteonP=.+?);|(JSESSIONID=.+?);', cookies)
-    search ="; ".join(find_texts_by_reg(r'(JSESSIONID=.+?|AlteonP=.+?)(?=;)', cookies))
-    print(f"【().search={search}】")
+    # re.compile(r'asd$')
+    #
+    # # search = search_text_by_reg(r'(\d{7,11})', "你好12345678911厕所")
+    # cookies = "AlteonP=APcZL2TcHKz3B3twFFdCVw$$; Path=/, JSESSIONID=8KS2h9ML0HYTw2lTNQXyynkDDLpf5VnTpjgfLxgvxLhrBCJGHrsf!-530257836; path=/; HttpOnly"
+    # # search = find_texts_by_reg(r'(AlteonP=.+?);|(JSESSIONID=.+?);', cookies)
+    # search ="; ".join(find_texts_by_reg(r'(JSESSIONID=.+?|AlteonP=.+?)(?=;)', cookies))
+    # print(f"【().search={search}】")
+    text='href="/zufang/45707104.html"'
+    reg = find_texts_by_reg(r'href=\"(.+?.html)\"', text)
+    print(f"【()reg={reg}】")

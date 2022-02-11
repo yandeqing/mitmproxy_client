@@ -32,8 +32,6 @@ def open(path=None, url=None):
     # webbrowser.open_new_tab(url)
 
 
-
-
 def USBLoginCheck():
     print(f"=====login1=====")
     url = "http://183.194.243.146:7001/fangdi/system/USBLoginCheck.jsp?pwd=134cc70a"
@@ -104,15 +102,24 @@ def AppNavigatorIn51(cookie):
         "Cookie": cookie
     }
     print(f"headers={json.dumps(headers, indent=4, ensure_ascii=False)}")
-    response = requests.get(url, headers=headers, data=payload, allow_redirects=False)
+    session = requests.session()
+    response = session.get(url, headers=headers, data=payload, allow_redirects=False)
     print(f"==response headers==========================")
     for item in response.headers.items():
         print(f'"{item[0]}":"{item[1]}",')
     print(f"==response headers==========================")
     print(f"content========={response.text}=====")
-    cookie = response.headers.get('Set-Cookie')
-    print(f"得到Cookie:{cookie}")
-    return cookie
+    location = response.headers.get('Location')
+    print(f"得到Location:{location}")
+    response = session.get(location)
+    print(f"==response headers==========================")
+    items = response.headers.items()
+    for item in items:
+        print(f'"{item[0]}":"{item[1]}",')
+    print(f"==response headers==========================")
+    headers['Cookie']=response.headers.get("Set-Cookie").split(";")[0]
+    response = requests.get(headers=headers,url="http://183.194.244.244:8081/agent/attrlist?current=1&size=10")
+    return response
 
 
 import http.cookiejar as HC
@@ -160,6 +167,7 @@ def AppNavigatorIn47(cookie):
     response = session.get(localtion, headers=headers, allow_redirects=False)
     print_response(response)
 
+
 def print_response(response):
     print(f"url========={response.url}")
     print(f"status_code={response.status_code}")
@@ -203,6 +211,31 @@ def trim_cookie(cookie):
     return search
 
 
+headers = {
+    "Accept": "text/html, application/xhtml+xml, image/jxr, */*",
+    "Accept-Language": "zh-Hans-CN,zh-Hans;q=0.5",
+    "User-Agent": "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 10.0; WOW64; Trident/7.0)",
+    "Accept-Encoding": "gzip, deflate",
+    "Host": "183.194.243.146:7001",
+    "Proxy-Connection": "Keep-Alive",
+}
+
+
+def start_request(url,payload=None, cookie=None):
+    print(f"=====url={url}=====")
+    print(f"post {payload}")
+    headers['Cookie'] = cookie
+    print(f"headers={json.dumps(headers, indent=4, ensure_ascii=False)}")
+    response = requests.post(url, headers=headers, data=payload)
+    print(f"==responses tatus_code= {response.status_code}==========================")
+    print(f"==response text={response.text}==========================")
+    print(f"==response headers==========================")
+    for item in response.headers.items():
+        print(f'"{item[0]}":"{item[1]}",')
+    print(f"==response headers==========================")
+    return response
+
+
 def login():
     cookie = USBLoginCheck()
     time.sleep(1)
@@ -214,12 +247,9 @@ def login():
     res = MiddAppList(cookie)
     if res:
         cookie = trim_cookie(res)
-    # res = AppNavigatorIn51(cookie)
-    split = cookie.split("; ")
-    split.reverse()
-    cookie = ("; ").join(split)
-    time.sleep(1)
-    res = AppNavigatorIn47(cookie)
+    response = AppNavigatorIn51(cookie)
+    print(f"{response.text}")
+    # res = AppNavigatorIn47(cookie)
 
     # sCredential: FWCXZX-47-913101203423709334
     # pwd:         134cc70a
@@ -229,6 +259,6 @@ def login():
     #     '"C:/Users/Zuber/AppData/Roaming/360se6/Application/360se.exe" http://183.194.243.146:7001/fangdi/system/USBLogin.jsp')
     # os.system('"C:/Users/ZuberZuber/AppData/Roaming/360se6/Application/360se.exe" http://183.194.243.146:7001/fangdi/system/USBLoginCheck.jsp?keypwd=134cc70a')
 
-
+# 请求 URL:
 if __name__ == '__main__':
     login()

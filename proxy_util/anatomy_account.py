@@ -125,7 +125,8 @@ class ServerManager:
         self.master.run()
 
     def start_mitweb(self, host=None, port: int = None, thread: UIActionQtThread = None):
-        thread.response(0, "web查看接口信息服务启动")
+        if thread:
+            thread.response(0, "web查看接口信息服务启动")
         args = [
             "--web-open-browser",
             "--listen-host",
